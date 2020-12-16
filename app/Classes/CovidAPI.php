@@ -123,8 +123,9 @@ class CovidAPI
                 'nomeCidade'=>$name,
                 'percentualDeCasos'=>$cityRate
             ];
-
+    
             $response = $this->writeData($body);
+            i++;
         }
 
         return $response;
