@@ -14,7 +14,7 @@ class CovidController extends Controller
         $response = $data->response;
 
         #if we succeed in get the Data, then we can rank the 10 worst cities and write the results.
-        if ($response->successful()){
+        if($response->successful()){
             $rankedCities = $data->getWorstCities(10);
             $response = $data->write($rankedCities);    
         }
