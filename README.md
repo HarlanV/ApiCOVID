@@ -1,6 +1,6 @@
 ## Sobre o projeto
 
-Para execução correta do projeto, peço que sejam executada as seguintes rotinas:
+Para execução correta do projeto, peço que sejam executadas as seguintes rotinas:
 
 1. Instalação de todas as dependências, incluindo aqui o Laravel
 > composer install
