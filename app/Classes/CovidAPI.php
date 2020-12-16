@@ -1,0 +1,146 @@
+<?php
+
+namespace App\Classes;
+
+use ErrorException;
+use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Http;
+
+class CovidAPI
+{
+    private $startData;
+    private $endData;
+
+    public function __construct($state,$startDate,$endDate)
+    {
+        $this->startData = $this->readData($state, $startDate);
+
+        $this->endData = $this->readData($state, $endDate);
+    }
+
+    /**
+     * Returns the 'n' worst cities and there's rates 
+     * 
+     * @param   int $n
+     * @return  array
+     */
+    public function getWorstCities(int $n=10):array
+    {
+        $rates = $this->totalContamination();
+
+        arsort($rates);
+
+        return array_slice($rates, 0, $n, true);
+    }
+
+    /**
+     * This function calculates the total amount of contaminated between dates and return
+     * the percentual rate.
+     * 
+     * @return  array   $contaminated
+     */
+    private function totalContamination(): array
+    {
+        $contaminatedStart=[];
+        $contaminated=[];
+
+        # Calculate the total amount of contaminated at the first day
+        foreach ($this->startData as $data) {
+            $name = $data['city'];
+            $population = $data['estimated_population'];
+            $confirmed = $data['confirmed_per_100k_inhabitants'];
+            if(!in_array(null,[$name, $population],true)){
+                $contaminatedStart[$name] = ($confirmed*$population)/(10^5);
+            }
+        }
+
+        # Calculate the total amount of contaminated at the last day
+        foreach ($this->endData as $data) {
+            $name = $data['city'];
+            $population = $data['estimated_population'];
+            $confirmed = $data['confirmed_per_100k_inhabitants'];
+            if(!in_array(null,[$name,$population],true)){
+                $contaminatedNow = ($confirmed*$population)/(10^5);
+                try{
+                    #if we have the inital data, make de difference and calculate the percentual
+                    $contaminated[$name] = ($contaminatedNow - $contaminatedStart[$name])/$population ;
+                }catch(ErrorException $e){
+                    #if we miss startData of one city, is assumed as Zero! 
+                    $contaminated[$name] = ($confirmed)/$population ;
+                }
+            }
+        }
+
+        return($contaminated);
+    }
+
+    /**
+     * This functions iterate to write each data on API 
+     * 
+     * @param   array   $rankedCities
+     * @return  array   $allComunicationStatus
+     */
+    public function write($rankedCities): array
+    {     
+        $id = 0;
+        $allComunicationStatus =[];
+        foreach($rankedCities as $cityData){
+            $body=[
+                'id' => $id,
+                'nomeCidade'=>key($cityData),
+                'percentualDeCasos'=>$cityData
+            ];
+
+            $status = $this->writeData($body);
+            $allComunicationStatus[] = [$id,$status];
+        }
+
+        return $allComunicationStatus;
+    }
+
+    /**
+     * Consume the API that contains the data-source
+     * 
+     * @param   string  $state
+     * @param   string  $date
+     * @return  array   
+     */
+    private function readData($state, $date)
+    {
+        $token = config('app.token');
+
+        $url = 'https://api.brasil.io/dataset/covid19/caso/data/?state='.$state.'&date='.$date;
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Token '. $token
+        ])->get($url);
+
+        return($response->json()['results']);
+    }
+
+    /**
+     * Write de API as required
+     * 
+     * @param   array   $body
+     * @return GuzzleHttp\Psr7\ $response
+     */
+    private function writeData($body)
+    {
+        $client = new Client();
+
+        $url = 'https://us-central1-lms-nuvem-mestra.cloudfunctions.net/testApi';
+
+        $headers = [
+            'MeuNome' => 'Harlan Victor'
+        ];
+
+        $response = $client->request('POST', $url, [
+            'headers' => $headers,
+            'body' =>json_encode($body),
+            'verify'  => false,
+        ]);
+
+        return $response;
+    }
+
+}

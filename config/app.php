@@ -56,6 +56,10 @@ return [
 
     'asset_url' => env('ASSET_URL', null),
 
+    'token' => env('TOKEN'),
+
+    'Authorization' => 'Token '.env('TOKEN'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

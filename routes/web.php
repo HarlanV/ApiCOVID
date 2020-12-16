@@ -13,10 +13,5 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
 
-#Route::get('/teste','App\Http\Controllers\InformationController@covidAPI');
-
-Route::get('/teste','App\Http\Controllers\CovidController@index');
+Route::get('/','App\Http\Controllers\CovidController@index');
