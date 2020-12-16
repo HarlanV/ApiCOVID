@@ -10,12 +10,37 @@ class CovidAPI
 {
     private $startData;
     private $endData;
+    public $response;
 
     public function __construct($state,$startDate,$endDate)
-    {
-        $this->startData = $this->readData($state, $startDate);
+    {   
+        $this->response = $this->importData($state,$startDate,$endDate);
+    }
 
-        $this->endData = $this->readData($state, $endDate);
+    public function importData($state,$startDate,$endDate)
+    {
+
+        #initiating data import from start date
+        $response = $this->readData($state, $startDate);
+        
+        #if connection fail, save the response and stop function.
+        if(!$response->successful()){
+            return $response;
+        }
+
+        $this->startData = $response->json()['results'];
+
+        #initiating data import from end date
+        $response = $this->readData($state, $endDate);
+
+        #if connection fail, save the response and stop function.
+        if(!$response->successful()){
+            return $response;
+        }
+
+        $this->endData = $response->json()['results'];
+
+        return $response;
     }
 
     /**
@@ -75,27 +100,26 @@ class CovidAPI
     }
 
     /**
-     * This functions iterate to write each data on API 
+     * This functions configure and write the data consuming another API
      * 
      * @param   array   $rankedCities
-     * @return  array   $allComunicationStatus
+     * @return  \Illuminate\Http\Client\Response    $status
      */
-    public function write($rankedCities): array
-    {     
+    public function write($rankedCities)
+    {   
         $id = 0;
-        $allComunicationStatus =[];
-        foreach($rankedCities as $cityData){
+
+        foreach($rankedCities as $name=>$cityRate){
             $body=[
                 'id' => $id,
-                'nomeCidade'=>key($cityData),
-                'percentualDeCasos'=>$cityData
+                'nomeCidade'=>$name,
+                'percentualDeCasos'=>$cityRate
             ];
 
-            $status = $this->writeData($body);
-            $allComunicationStatus[] = [$id,$status];
+            $response = $this->writeData($body);
         }
 
-        return $allComunicationStatus;
+        return $response;
     }
 
     /**
@@ -103,7 +127,7 @@ class CovidAPI
      * 
      * @param   string  $state
      * @param   string  $date
-     * @return  array   
+     * @return  response   
      */
     private function readData($state, $date)
     {
@@ -114,31 +138,25 @@ class CovidAPI
         $response = Http::withHeaders([
             'Authorization' => 'Token '. $token
         ])->get($url);
-
-        return($response->json()['results']);
+        
+        return $response;
     }
 
     /**
      * Write de API as required
      * 
      * @param   array   $body
-     * @return GuzzleHttp\Psr7\ $response
+     * @return  \Illuminate\Http\Client\Response    $response
      */
     private function writeData($body)
     {
-        $client = new Client();
-
-        $url = 'https://us-central1-lms-nuvem-mestra.cloudfunctions.net/testApi';
-
-        $headers = [
+        $header = [
             'MeuNome' => 'Harlan Victor'
         ];
 
-        $response = $client->request('POST', $url, [
-            'headers' => $headers,
-            'body' =>json_encode($body),
-            'verify'  => false,
-        ]);
+        $url = 'https://us-central1-lms-nuvem-mestra.cloudfunctions.net/testApi';
+
+        $response = Http::withHeaders($header)->post($url, $body);
 
         return $response;
     }

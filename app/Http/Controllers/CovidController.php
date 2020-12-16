@@ -11,9 +11,13 @@ class CovidController extends Controller
     {
         $data = new CovidAPI($request->state,$request->dateStart,$request->dateEnd);
 
-        $rankedCities = $data->getWorstCities(10);
+        $response = $data->response;
 
-        $response = $data->write($rankedCities);
+        #if we succeed in get the Data, then we can rank the 10 worst cities and write the results.
+        if ($response->successful()){
+            $rankedCities = $data->getWorstCities(10);
+            $response = $data->write($rankedCities);    
+        }
         
         return $response;
     }
