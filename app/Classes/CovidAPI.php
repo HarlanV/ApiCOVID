@@ -17,6 +17,14 @@ class CovidAPI
         $this->response = $this->importData($state,$startDate,$endDate);
     }
 
+    /**
+     * Consume API, import data from webservice
+     * 
+     * @param   string  $state
+     * @param   string  $startDate
+     * @param   string  $endDate
+     * @return  \Illuminate\Http\Client\Response    $response
+     */
     public function importData($state,$startDate,$endDate)
     {
 
